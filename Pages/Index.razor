@@ -1,0 +1,1047 @@
+﻿@page "/"
+@using PortTime.Data
+@using Microsoft.Extensions.Options;
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Layouts
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Popups
+@using PortTime.BusinessLogic
+@inject HttpClient HttpClient
+@inject SfDialogService DialogService
+@inject ICityController cityService
+@using System.Timers
+@using Humanizer;
+@using System.Globalization;
+
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" style="font-size:2rem;" href="#">Port Time</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse right" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="#">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">About</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Contact</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+<div class="parent-container">
+    <div style="max-width: 1352px;width:100%;margin-left: 50px;">
+        <div style="margin-bottom: 20px;margin-top:20px; line-height: 29px;">
+            <label style="font-size: 2rem;" for="cityName">Enter city name:</label>
+            <SfAutoComplete @ref="autoComplete" ID="search-input" TValue="string" TItem="City" Placeholder="e.g. Paris" DataSource="@_cityData" Width="200px" PopupHeight="300px" PopupWidth="300px">
+        <AutoCompleteFieldSettings Value="Name" />
+            <AutoCompleteEvents TValue="string" TItem="City" ValueChange="onChange"></AutoCompleteEvents>
+    </SfAutoComplete>
+            <button @onclick="GetWeatherData" id="search-button">Get Weather</button>
+    </div>
+    <div class="control-section" style="color:floralwhite;">
+            <div class="content-wrapper" style="max-width: 100%;background-image: url('https://app1.weatherwidget.org/skin/img/bg/clear_night.jpg';background-repeat: no-repeat;background-size: cover;)">
+            <SfDashboardLayout AllowResizing="true" AllowFloating="true" Columns="6" CellSpacing="@(new double[]{10 ,10 })">
+                <DashboardLayoutPanels>
+                    <DashboardLayoutPanel Id="2" Row="4" Column="2" SizeX="6" SizeY="2">
+                        <HeaderTemplate><div class="e-header-text">Current Temprature</div></HeaderTemplate>
+                        <ContentTemplate>
+                          <div class="carousel-inner">
+                                <div class="carousel-item active">
+                                        <div class="row" style="justify-content: center;overflow:hidden;">
+                                        <div class="col-6">
+                                            <div class="temp">@Temperature</div>
+                                                @{
+                                                    var jj = City1 + ", " + Country;
+                                                }
+                                                <div class="location" style="font-size:3rem;">@jj</div>
+                                        </div>
+@*                                        <div class="col-6 justify-content-right">
+                                            <img src=@CountryFlagUrl
+                                                 width="128"
+                                                 height="96">
+                                            <span>@Country</span>
+                                        </div>*@
+                                    </div>
+
+                                </div>
+                            </div>
+                        </ContentTemplate>
+                    </DashboardLayoutPanel>
+                    <DashboardLayoutPanel Id="4" Row="3" Column="6" SizeX="3" SizeY="1">
+                        <HeaderTemplate><div class="e-header-text">Sunset</div></HeaderTemplate>
+                            <ContentTemplate><div class="sunset" style="font-size:5rem;line-height: 4rem;overflow:hidden;">@Sunset</div></ContentTemplate>
+                    </DashboardLayoutPanel>
+
+                        <DashboardLayoutPanel Id="5" Row="4" Column="2" SizeX="6" SizeY="1">
+                            <HeaderTemplate><div class="e-header-text">Local-Time</div></HeaderTemplate>
+                            <ContentTemplate>
+                                <span class="temp" style="overflow:hidden;line-height: 4rem;">@currentTime.ToString("hh:mm:ss tt")</span>
+                            </ContentTemplate>
+                        </DashboardLayoutPanel>
+
+                    <DashboardLayoutPanel Id="8" Row="0" Column="0" SizeX="3" SizeY="2">
+                        <HeaderTemplate><div class="e-header-text">Today</div></HeaderTemplate>
+                        <ContentTemplate>
+                                @{
+
+
+                                    string formattedDate = DateTime.Now.ToString("dddd MMMM d, yyyy");
+                                }
+                                <span style="overflow:hidden" class="temp">@formattedDate</span>
+                        </ContentTemplate>
+                    </DashboardLayoutPanel>
+
+                    <DashboardLayoutPanel Id="6" Row="1" Column="4" SizeX="3" SizeY="1">
+                        <HeaderTemplate><div class="e-header-text">Sunrise</div></HeaderTemplate>
+                        <ContentTemplate>
+
+                                <div style="font-size:5rem;line-height: 4rem;background-image: src='/css/sunrise.gif';">@Sunrise</div>
+                            </ContentTemplate>
+                    </DashboardLayoutPanel>
+                    <DashboardLayoutPanel Id="7" Row="7" Column="2" SizeX="6" SizeY="3">
+                        <HeaderTemplate><div class="e-header-text">Forecast</div></HeaderTemplate>
+                        <ContentTemplate>
+                                <div style="overflow:hidden" class="forecast">
+                                @if (Model != null && Model.Count() > 0)
+                                {
+                                    foreach (var day in Model)
+                                    {
+                                        <div class="day">
+                                            <h3>@day.DayOfWeek</h3>
+                                            <img class="img-fluid" src="@day.ImageUrl">
+                                            <div class="condition">@day.ConditionText</div>
+                                            <div class="temps">
+                                                <div class="min-temp">@day.MinTempC &deg;C</div>
+                                                <div class="max-temp">@day.MaxTempC &deg;C</div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </ContentTemplate>
+                    </DashboardLayoutPanel>
+                </DashboardLayoutPanels>
+            </SfDashboardLayout>
+        </div>
+    </div>
+</div>
+    <div id='city' style="float: right; width: 30%;margin-left: 50px;margin-top: 63px;">
+    @if (cityWeather != null)
+    {
+        <div>
+                <h2  style="font-size:3rem;text-decoration: underline;">@cityWeather.City</h2>
+                <p  style="font-size:2rem;">Region: @cityWeather.Region</p>
+                <p style ="font-size:2rem;">Country: @cityWeather.Country</p>
+                <p style="font-size:2rem;">Local Time: @cityWeather.LocalTime.ToString()</p>
+                <p id="temperature-label" style="font-size:2rem;">Temperature: @cityWeather.Temperature</p>
+                <p style="font-size:2rem;">Sunrise: @cityWeather.Sunrise</p>
+                <p style="font-size:2rem;">Sunset: @cityWeather.Sunset</p>
+        </div>
+            <button id='morebtn' @onclick="ToggleMoreData">@((showMoreData ? "Less" : "More"))</button>
+    }
+    @if (showMoreData)
+    {
+        <div class="st_viewport list-animation">
+                <table id="forecast" data-table_id="2" class="st_table">
+                <thead class="st_table_header">
+                        <h2>Current</h2>
+                </thead>
+                    <tr style="color: darkturquoise;" class="st_row">
+                        <th class="st_column">Key</th>
+                        <th class="st_column">Value</th>
+                    </tr>
+                <tbody>
+                    <tr class="st_row">
+                        <td class="st_column">Last Updated</td>
+                        <td class="st_column">@cityWeather.flatData.CurrentData.Current[0].LastUpdated</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Temperature</td>
+                        <td class="st_column">@cityWeather.flatData.CurrentData.Current[0].TempC °C</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Feels Like</td>
+                        <td class="st_column">@cityWeather.flatData.CurrentData.Current[0].feelslike_c</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Humidity</td>
+                        <td class="st_column">@cityWeather.flatData.CurrentData.Current[0].humidity</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Wind Speed</td>
+                        <td class="st_column">@cityWeather.flatData.CurrentData.Current[0].wind_kph</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Wind Direction</td>
+                        <td class="st_column">@cityWeather.flatData.CurrentData.Current[0].wind_dir</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Pressure</td>
+                        <td class="st_column">@cityWeather.flatData.CurrentData.Current[0].pressure_in</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">UV Index</td>
+                        <td class="st_column">@cityWeather.flatData.CurrentData.Current[0].uv</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table data-table_id="3" class="st_table">
+                <thead class="st_table_header">
+                        <h2 style="color: whitesmoke;">Location</h2>
+                    <tr class="st_row">
+                        <th class="st_column"></th>
+                        <th class="st_column"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="st_row">
+                        <td class="st_column">City</td>
+                        <td class="st_column">@cityWeather.City</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Region</td>
+                        <td class="st_column">@cityWeather.Region</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Country</td>
+                        <td class="st_column">@cityWeather.Country</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Latitude</td>
+                        <td class="st_column">@cityWeather.flatData.CurrentData.Location[0].lat</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Longitude</td>
+                        <td class="st_column">@cityWeather.flatData.CurrentData.Location[0].lon</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Timezone</td>
+                        <td class="st_column">@cityWeather.flatData.CurrentData.Location[0].tz_id</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Local Time</td>
+                        <td class="st_column">@cityWeather.LocalTime</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="st_table" data-table_id="4">
+                <thead class="st_table_header">
+                        <h2 style="color: whitesmoke;">Condition</h2>
+                    <tr class="st_row">
+                        <th class="st_column"></th>
+                        <th class="st_column"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="st_row">
+                        <td class="st_column">Text</td>
+                        <td class="st_column">@cityWeather.flatData.CurrentData.Current[0].condition.text</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Icon</td>
+                        <td class="st_column"><img src="@cityWeather.flatData.CurrentData.Current[0].condition.icon" alt="Weather Icon" /></td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Code</td>
+                        <td class="st_column">@cityWeather.flatData.CurrentData.Current[0].condition.code</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Last Updated</td>
+                        <td class="st_column">@cityWeather.flatData.CurrentData.Current[0].LastUpdated</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Temperature</td>
+                        <td class="st_column">@cityWeather.flatData.CurrentData.Current[0].TempC °C</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Feels Like</td>
+                        <td class="st_column">@cityWeather.flatData.CurrentData.Current[0].feelslike_c</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Humidity</td>
+                        <td class="st_column">@cityWeather.flatData.CurrentData.Current[0].humidity</td>
+                    </tr>
+                </tbody>
+            </table>
+                <table class="st_table" style="background-color: cadetblue;" data-table_id="5">
+                    <thead class="st_table_header">
+                        <h2 style="color: whitesmoke;">Astronomy</h2>
+                        <tr class="st_row">
+                            <th class="st_column"></th>
+                            <th class="st_column"></th>
+                        </tr>
+                    </thead>
+                <tbody>
+                    <tr class="st_row">
+                        <td class="st_column">Sunrise</td>
+                        <td class="st_column">@cityWeather.flatData.AstronomyData.Astronomies[0].Astro.Sunrise</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Sunset</td>
+                        <td class="st_column">@cityWeather.flatData.AstronomyData.Astronomies[0].Astro.Sunset</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Moonrise</td>
+                        <td class="st_column">@cityWeather.flatData.AstronomyData.Astronomies[0].Astro.moonrise</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Moonset</td>
+                        <td class="st_column">@cityWeather.flatData.AstronomyData.Astronomies[0].Astro.moonset</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Moon Phase</td>
+                        <td class="st_column">@cityWeather.flatData.AstronomyData.Astronomies[0].Astro.moon_phase</td>
+                    </tr>
+                    <tr class="st_row">
+                        <td class="st_column">Moon Illumination</td>
+                        <td class="st_column">@cityWeather.flatData.AstronomyData.Astronomies[0].Astro.moon_illumination</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+
+    }
+</div>
+</div>
+
+
+ <style>
+    @@keyframes play-once {
+        to { background-position: 0 0; }
+    }
+    @@keyframes myAnimation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>
+<div id="test" style="display:none">This is a test div</div>
+@*future use//
+    <div style="background-image: url('/Pages/sunrise.gif'); animation: myAnimation 2s linear infinite; width: 200px; height: 200px;">
+    <!-- Content goes here -->
+</div>
+<div style="position: relative; width: 100%; height: 100%; z-index: 1;">
+    <img src="/css/sunrise.gif" style="width: 500px; height: 500px; object-fit: cover; animation: play-once 1s;" />
+</div>*@
+
+
+
+@code {
+
+    //set this
+    private static string baseurlAndport = "https://localhost:7143";
+
+    private string Temperature { get; set; } 
+    private string City { get; set; }
+    private string Region { get; set; }
+    private string Country { get; set; }
+    private string LocalTime { get; set; }
+    private string Sunrise { get; set; }
+    private string Sunset { get; set; }
+    private string CountryRegion { get; set; }
+    private string CountryFlagUrl { get; set; }
+    private DateTime currentTime;
+    private List<WeatherForecast> Model;
+    private System.Timers.Timer timer;
+    private bool showMoreData = false;
+    public Weather WeatherData { get; set; }
+    public SfAutoComplete<string, City> autoComplete;
+    public City SelectedCity { get; set; } = new City();
+    [Parameter]
+    public List<City> CityData { get; set; }
+    private List<City> _cityData;
+    private readonly HttpClient _httpClient;
+
+    private readonly string _webApiBaseUrl;
+    private readonly IOptions<AppSettings> _appSettings;
+    private readonly HttpClient __httpClient;
+    private List<string> Cities = new List<string> { "New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia", "San Antonio", "San Diego", "Dallas", "San Jose" };
+    private CityWeather cityWeather;
+    private string City1 { get; set; } = "";
+    private List<string> Suggestions { get; set; } = new List<string> { "New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia", "San Antonio", "San Diego", "Dallas", "San Jose" };
+    private void ToggleMoreData()
+    {
+        showMoreData = !showMoreData;
+    }
+    public Index(HttpClient httpClient, IOptions<AppSettings> appSettings)
+    {
+        httpClient = httpClient;
+        _appSettings = appSettings;
+    }
+    public Index()
+    { }
+
+    protected override void OnInitialized()
+    {
+        // Initialize the timer with a 1 second interval.
+        timer = new System.Timers.Timer(1000);
+        timer.Elapsed += UpdateTime;
+        timer.Enabled = true;
+
+        base.OnInitialized();
+    }
+
+    private void UpdateTime(object sender, ElapsedEventArgs e)
+    {
+        currentTime = currentTime.AddMilliseconds(1000);
+
+        InvokeAsync(() =>
+        {
+            StateHasChanged();
+        });
+    }
+    protected  void Dispose(bool disposing)
+    {
+        // Clean up the timer when the component is disposed.
+        if (disposing)
+        {
+            timer.Dispose();
+        }
+
+        Dispose(disposing);
+    }
+
+
+    private async Task GetWeatherData()
+    {
+        try
+        {
+            // Set the city name based on the selected city
+            City1 = SelectedCity.Name;
+
+            // Call the web API to get weather data for the selected city
+            var response = await cityService.GetWeather(City1);
+
+            // Check the HTTP status code of the response
+            if (response.Result is OkObjectResult okResult && response.Result != null)
+            {
+                // Get the CityWeather object from the response
+                cityWeather = (CityWeather)((OkObjectResult)response.Result).Value;
+
+                // Set various properties based on the weather data returned by the API
+                Temperature = cityWeather.Temperature.ToString() + "°";
+                City = cityWeather.City;
+                Region = cityWeather.Region;
+                Country = cityWeather.Country;
+                LocalTime = cityWeather.LocalTime.ToString();
+                Sunrise = cityWeather.Sunrise.ToString("HH:mm:ss");
+                Sunset = cityWeather.Sunset.ToString("HH:mm:ss");
+                CountryRegion = Country + " , " + Region;
+
+                // If a city is selected, set the CountryFlagUrl to the URL of the selected city's flag image
+                if (SelectedCity != null)
+                {
+                    CountryFlagUrl = SelectedCity.FlagUrl;
+                }
+
+                // Set the current time to the local time of the selected city
+                currentTime = DateTime.ParseExact(cityWeather.LocalTime.ToString(), "dd/MM/yyyy h:mm:ss tt", CultureInfo.InvariantCulture);
+
+                // Initialize a timer to update the clock every second
+                Timer timer = new Timer(1000);
+                timer.Elapsed += UpdateTime;
+                timer.Start();
+
+                // Call the GetWeather method to retrieve the weather forecast data
+                await GetWeather();
+            }
+            else 
+            {
+                await DialogService.AlertAsync($"City ({City1}) not found.");
+            }
+        }
+        catch (Exception e)
+        {
+            await DialogService.AlertAsync("An error occurred while getting weather data.");
+        }
+    }
+
+
+
+
+    public async Task GetWeather()
+    {
+        var location = SelectedCity.Name.ToString();
+        var response = await cityService.GetweatherData(location);
+        if (response.Value != null)
+        {
+            Model = (List<WeatherForecast>)response.Value;
+        }
+    }
+
+
+
+    //This method is called whenever the selected item in the SfAutoComplete component changes.
+    //It sets the SelectedCity property to the selected city object.
+
+    public async Task onChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, City> args)
+    {
+        try
+        {
+            if (args.ItemData != null)
+            {
+                SelectedCity = args.ItemData;
+                //CountryFlagUrl = ""+args.ItemData.FlagUrl.ToString();
+            }
+        }
+        catch (Exception e)
+        {
+            await DialogService.AlertAsync("City Not Found!");
+        }
+
+    }
+
+    //GetCityData() is a method that makes a request to the API to get a list of cities.
+    //OnAfterRenderAsync() is a lifecycle method that is called after the component has been rendered.
+    //It calls GetCityData() when the component is first rendered.
+    private async Task GetCityData()
+    {
+        //var baseUrl = _appSettings.Value.WebApiBaseUrl;
+        if (HttpClient != null)
+        {
+            var response = await cityService.GetCityData();
+            StateHasChanged();
+            if (response.Result is OkObjectResult okResult)
+            {
+                _cityData = (List<City>)okResult.Value;
+                StateHasChanged();
+            }
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Call your function here
+            await GetCityData();
+        }
+    }
+
+    
+
+
+    //    SearchCities() is called whenever the text in the search box changes.
+//    It sets the Suggestions property to a list of cities that match the search query.
+//SelectSuggestion() is called whenever a suggestion is selected.
+//    It sets the City1 property to the selected suggestion and clears the Suggestions list.
+    private void SearchCities()
+    {
+        var query = City1;//e.Value.ToString().ToLower();
+        Suggestions = string.IsNullOrWhiteSpace(query)
+            ? new List<string>()
+            : Cities.Where(c => c.ToLower().Contains(query)).ToList();
+    }
+
+    private void SelectSuggestion(string suggestion)
+    {
+        City1 = suggestion;
+        Suggestions.Clear();
+    }
+
+}
+@*Due to CSS isolation styles are left here for now but they will be moved to ~/css/StyleSheet.css
+<link rel="stylesheet" href="~/css/StyleSheet.css"/>*@
+
+<style>
+    #suggestions {
+        position: absolute;
+        width: 100%;
+        max-height: 200px;
+        overflow-y: scroll;
+        background-color: #fff;
+        border: 1px solid #ddd;
+        z-index: 999;
+        padding: 0;
+        margin-top: 0;
+    }
+
+    #suggestions li,
+    datalist option {
+        list-style-type: none;
+        padding: 5px;
+        cursor: pointer;
+    }
+
+    #suggestions li:hover,
+    datalist option:hover {
+        background-color: #f1f1f1;
+    }
+
+
+    .e-panel-header {
+        background-color: rgba(0, 0, 0, .1);
+        text-align: center;
+    }
+
+    .e-panel-content {
+        text-align: center;
+        margin-top: 10px;
+        overflow: hidden;
+    }
+
+    .container {
+        width: fit-content;
+    }
+
+    .card {
+        padding: 1.2rem 3rem 1rem 3rem;
+        margin: 1rem;
+        border-radius: 1.5rem;
+        border-color: rgba(238, 237, 237, 0.438);
+        box-shadow: 5px 8px 10px #80808033;
+    }
+
+    @@media(max-width:767px) {
+        .card {
+            height: 10rem;
+            padding: 1.5rem 1.5rem 1rem 1.5rem;
+        }
+    }
+
+    .carousel-indicators li {
+        width: 5px;
+        height: 6px;
+        border-radius: 100%;
+        opacity: 0.2;
+        background-color: #000000;
+    }
+
+    .carousel-indicators {
+        margin-bottom: 0;
+    }
+
+    .temp {
+        font-size: 5rem;
+        color: floralwhite;
+    }
+
+    .card-1 {
+        background: linear-gradient(to right, #ffffff 50%, rgba(241, 224, 190, 0.507));
+    }
+
+    @@media(max-width:767px) {
+        .temp {
+            font-size: 3rem;
+        }
+    }
+
+    .location {
+        margin-bottom: 1.5rem;
+    }
+
+    @@media(max-width:767px) {
+        .location {
+            font-size: 0.75rem;
+        }
+    }
+
+    .img-fluid {
+        float: right;
+        width: 65%;
+        display: flex;
+        align-items: center;
+    }
+
+    .row2 .img-fluid {
+        margin: 10% 0;
+        opacity: 0.5;
+        width: 40%;
+    }
+
+    .card-2 .row {
+        justify-content: center;
+    }
+
+    .card-3 .row {
+        justify-content: center;
+    }
+
+    .row1 {
+        font-size: 0.7rem;
+        font-weight: bold;
+        color: black;
+    }
+
+    .row3 {
+        font-size: 0.9rem;
+        font-weight: bold;
+        color: black;
+    }
+
+    @@media(max-width:400px) {
+        .row3 {
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: black;
+        }
+    }
+
+    @@media(max-width:320px) {
+        .row3 {
+            font-size: 0.6rem;
+            font-weight: bold;
+            color: black;
+        }
+    }
+
+    .row4 {
+        font-size: 0.6rem;
+        color: rgb(196, 196, 196);
+        margin: 5% 0 2.5rem;
+    }
+
+    .card-3 .row3 {
+        margin: 5% 0 2.5rem;
+    }
+
+    .col {
+        overflow: visible;
+    }
+
+    .row {
+        overflow: visible;
+    }
+
+    .forecast {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+    }
+
+    .day {
+        width: 200px;
+        margin-bottom: 20px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        text-align: center;
+    }
+
+    .day h3 {
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+
+    .day .condition {
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+
+    .day .temps {
+        display: flex;
+        justify-content: space-between;
+        font-size: 14px;
+    }
+
+    .day .min-temp, .day .max-temp {
+        font-weight: bold;
+    }
+
+    /* switch to vertical layout on smaller screens */
+    @@media screen and (max-width: 768px) {
+    .forecast {
+        flex-direction: column;
+    }
+
+    .day {
+        width: 100%;
+    }
+
+    .day h3 {
+        font-size: 16px;
+    }
+    }
+
+
+
+    .e-dashboardlayout.e-control.e-responsive {
+        background-image: url('https://app1.weatherwidget.org/skin/img/bg/clear_night.jpg');
+        background-size: cover;
+        background-repeat: no-repeat;
+    }
+
+    .e-dashboardlayout.e-control {
+        position: relative;
+    }
+
+    .e-dashboardlayout.e-control:after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.6); /* semi-transparent black overlay */
+    }
+
+    .e-dashboardlayout.e-control .e-panel {
+        background-color: rgb(0 0 0 / 20%);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        box-sizing: border-box;
+        position: absolute;
+    }
+
+    .e-dashboardlayout.e-control .e-panel .e-panel-container .e-panel-header {
+        color: floralwhite;
+        height: 92px;
+    }
+
+    .e-dashboardlayout.e-control .e-panel .e-panel-container .e-panel-header {
+        background-color: rgba(219, 219, 219, 0.2);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        box-sizing: border-box;
+        font-size: 3rem;
+    }
+
+    .e-dashboardlayout.e-control .e-panel:active {
+        background: transparent !important;
+        box-shadow: none !important;
+        opacity: 0.1;
+        border: 3px solid #dee2e6;
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+
+    .table th,
+    .table td {
+        padding: 10px;
+        border: 1px solid #ddd;
+        text-align: left;
+            vertical-align: top;
+    }
+
+    .table th {
+        background-color: #f2f2f2;
+    }
+
+    .table td:first-child {
+        font-weight: bold;
+        width: 150px;
+            vertical-align: top;
+    }
+
+    * {
+        margin: 0;
+        pading: 0;
+        box-sizing: border-box;
+        vertical-align: top;
+    }
+
+    body {
+        background-image: url("https://app1.weatherwidget.org/skin/img/bg/clear_night.jpg");
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-attachment: fixed;
+        font-family: sans-serif;
+        color: rgb(220,220,220);
+        width: 100vw;
+    }
+
+    h1 {
+        font-weight: 400;
+    }
+
+    a {
+        color: inherit;
+    }
+
+    p {
+        margin-top: .7em;
+    }
+
+    .warning {
+        color: rgb(62,148,236);
+    }
+
+    .st_viewport {
+        max-height: 1263px;
+        overflow: scroll;
+    }
+
+    [data-table_id="1"] {
+        background-color: rgb(255,115,0);
+    }
+
+    [data-table_id="2"] {
+        background-color: rgb(61,53,39);
+        color: rgb(220,220,220);
+    }
+
+    [data-table_id="3"] {
+        background-color: rgba(168,189,4, .8);
+    }
+
+    ._rank {
+        min-width: 80px;
+    }
+
+    ._id {
+        min-width: 60px;
+    }
+
+    ._name {
+        min-width: 130px;
+    }
+
+    ._surname {
+        min-width: 130px;
+    }
+
+    ._year {
+        min-width: 80px;
+    }
+
+    ._section {
+        min-width: 130px;
+    }
+
+    pre {
+        overflow: auto;
+    }
+
+    /** Sticky table styles **/
+    .st_viewport {
+        background-color: rgb(62,148,236);
+        color: rgb(27,30,36);
+        margin: 20px 0;
+    }
+    /* ###  Table wrap */
+    .st_wrap_table {
+    }
+    /* ##   header */
+    .st_table_header {
+        position: -webkit-sticky;
+        position: sticky;
+        top: 0px;
+        z-index: 1;
+        background-color: rgb(27,30,36);
+        color: rgb(220,220,220);
+    }
+
+    .st_table_header h2 {
+        font-weight: 400;
+        margin: 0 20px;
+        padding: 20px 0 0;
+    }
+
+    .st_table_header .st_row {
+        color: rgba(220,220,220, .7);
+    }
+
+    .st_table_header .st_column {
+    }
+    /* ##  table */
+    .st_table {
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: -ms-flexbox;
+        display: flex;
+        -webkit-box-orient: vertical;
+        -webkit-box-direction: normal;
+        -webkit-flex-direction: column;
+        -ms-flex-direction: column;
+        flex-direction: column;
+    }
+    /* #   row */
+    .st_row {
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: -ms-flexbox;
+        display: flex;
+        margin: 0;
+    }
+
+    .st_table .st_row:nth-child(even) {
+        background-color: rgba(0,0,0, .1)
+    }
+    /* #   column */
+    .st_column {
+        padding: 10px 20px;
+        display: flex;
+        align-items: center;
+    }
+
+    .container {
+        display: flex;
+    }
+
+    .left, .right {
+        flex: 1;
+    }
+
+    .parent-container {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .navbar-expand-lg .navbar-collapse {
+        justify-content: right;
+    }
+
+    .sunset {
+        background-image: src="/css/sunset.gif" object-fit: cover;
+        animation: play-once 1s;
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-position: center;
+    }
+
+    .sunrise {
+        background-image: src="/css/sunrise.gif" object-fit: cover;
+        animation: play-once 1s;
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-position: center;
+    }
+
+    .list-animation {
+        animation-name: slide-down;
+        animation-duration: 0.5s;
+    }
+
+    @@keyframes slide-down {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .st_column:nth-child(1) {
+        width: 30%;
+    }
+
+    .st_column:nth-child(2) {
+        width: 40%;
+    }
+
+    .st_column:nth-child(3) {
+        width: 30%;
+    }
+
+    .st_column {
+        text-align: left;
+    }
+
+}
+</style>

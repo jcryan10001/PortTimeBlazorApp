@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>aspnet-PortTime-91ee0c4e-0385-491b-ab6b-3005106990a3</UserSecretsId>
+  <IsPackable>false</IsPackable>
+  <TestFramework>xunit</TestFramework>
+  <TestRunner>xunit</TestRunner>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Pages\sunrise.gif" />
+    <Content Include="Pages\sunset.gif" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="bunit" Version="1.18.4" />
+    <PackageReference Include="bunit.core" Version="1.18.4" />
+    <PackageReference Include="bunit.web" Version="1.18.4" />
+    <PackageReference Include="bunit.web.testcomponents" Version="1.18.4" />
+    <PackageReference Include="Hl7.Fhir.Support" Version="4.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="6.0.13" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="6.0.13" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="6.0.13" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="6.0.14" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.13" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="6.0.13" />
+    <PackageReference Include="Moq" Version="4.18.4" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.0.2" />
+    <PackageReference Include="Selenium.WebDriver" Version="4.8.1" />
+    <PackageReference Include="Syncfusion.Blazor" Version="20.4.0.52" />
+    <PackageReference Include="xunit" Version="2.4.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector" Version="3.1.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Data\NewFolder\" />
+  </ItemGroup>
+
+</Project>
